@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-100 text-slate-800">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>[MMI-7] Write stored procedure to perform data migration - Jira</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        jira: {
+                            blue: '#0052CC',
+                            darkBlue: '#0747A6',
+                            bg: '#F4F5F7',
+                            border: '#DFE1E6',
+                            text: '#172B4D',
+                            subtle: '#5E6C84',
+                            hover: '#EBECFF'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Alpine.js CDN -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        [x-cloak] { display: none !important; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif; }
+    </style>
+</head>
+<body class="h-full flex overflow-hidden bg-[#F4F5F7] text-[#172B4D]" x-data="jiraTaskApp()" x-cloak>
+
+    <!-- ========================================== -->
+    <!-- 1. LEFT JIRA SIDEBAR (COLLAPSIBLE)         -->
+    <!-- ========================================== -->
+    <aside class="w-60 bg-white border-r border-[#DFE1E6] flex flex-col justify-between shrink-0 select-none">
+        <div>
+            <!-- Jira Project Branding Header -->
+            <div class="p-4 border-b border-[#DFE1E6] flex items-center gap-3">
+                <div class="w-8 h-8 rounded bg-[#0052CC] text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                    MMI
+                </div>
+                <div class="min-w-0">
+                    <h1 class="text-sm font-bold text-[#172B4D] truncate leading-tight">Mill Midland</h1>
+                    <p class="text-[11px] text-[#5E6C84] truncate">Software Project</p>
+                </div>
+            </div>
+
+            <!-- Jira Navigation Items -->
+            <nav class="p-2 space-y-0.5 text-xs font-medium">
+                <a href="#" class="flex items-center gap-3 px-3 py-2 rounded text-[#5E6C84] hover:bg-[#EBECFF] hover:text-[#0052CC] transition">
+                    <i class="fa-solid fa-border-all w-4"></i> Architecture Board
+                </a>
+                <a href="#" class="flex items-center gap-3 px-3 py-2 rounded bg-[#DEEBFF] text-[#0052CC] font-bold">
+                    <i class="fa-solid fa-list-check w-4"></i> Issues
+                </a>
+                <a href="#" class="flex items-center gap-3 px-3 py-2 rounded text-[#5E6C84] hover:bg-[#EBECFF] hover:text-[#0052CC] transition">
+                    <i class="fa-solid fa-book w-4"></i> Project Wiki
+                </a>
+                <a href="#" class="flex items-center gap-3 px-3 py-2 rounded text-[#5E6C84] hover:bg-[#EBECFF] hover:text-[#0052CC] transition">
+                    <i class="fa-solid fa-gear w-4"></i> Project settings
+                </a>
+            </nav>
+        </div>
+
+        <!-- Sidebar Footer -->
+        <div class="p-3 border-t border-[#DFE1E6] bg-[#FAFBFC] flex items-center justify-between text-xs">
+            <div class="flex items-center gap-2">
+                <div class="w-6 h-6 rounded-full bg-amber-500 text-white font-bold text-[10px] flex items-center justify-center">WM</div>
+                <span class="font-semibold text-[#172B4D]">Wojciech Mruk</span>
+            </div>
+            <i class="fa-solid fa-angle-left text-[#5E6C84] cursor-pointer"></i>
+        </div>
+    </aside>
+
+    <!-- ========================================== -->
+    <!-- 2. MAIN ISSUE VIEW (JIRA STYLE 70/30)      -->
+    <!-- ========================================== -->
+    <main class="flex-1 overflow-y-auto bg-white flex flex-col min-w-0">
+
+        <!-- Top Breadcrumbs & Actions Header -->
+        <header class="px-8 py-3 border-b border-[#DFE1E6] flex items-center justify-between bg-white sticky top-0 z-10">
+            <!-- Breadcrumb Navigation -->
+            <div class="flex items-center gap-2 text-xs font-medium text-[#5E6C84]">
+                <i class="fa-solid fa-book-bookmark text-indigo-600"></i>
+                <a href="#" class="hover:underline">Mill Midland of Ireland</a>
+                <span>/</span>
+                <a href="#" class="hover:underline font-mono">MMI-1</a>
+                <span>/</span>
+                <span class="font-mono font-bold text-[#172B4D]">MMI-7</span>
+            </div>
+
+            <!-- Jira Top Actions -->
+            <div class="flex items-center gap-1.5 text-xs font-medium">
+                <button class="px-2.5 py-1.5 rounded hover:bg-[#F4F5F7] text-[#42526E] flex items-center gap-1.5">
+                    <i class="fa-regular fa-eye"></i> <span>2</span>
+                </button>
+                <button class="px-2.5 py-1.5 rounded hover:bg-[#F4F5F7] text-[#42526E] flex items-center gap-1.5">
+                    <i class="fa-regular fa-[#1] fa-thumbs-up"></i> <span>1</span>
+                </button>
+                <button class="px-2.5 py-1.5 rounded hover:bg-[#F4F5F7] text-[#42526E]">
+                    <i class="fa-solid fa-share-nodes"></i>
+                </button>
+                <button class="px-2.5 py-1.5 rounded hover:bg-[#F4F5F7] text-[#42526E]">
+                    <i class="fa-solid fa-ellipsis"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Task Layout (Container) -->
+        <div class="p-8 max-w-7xl mx-auto w-full grid grid-cols-12 gap-10">
+
+            <!-- ================================================= -->
+            <!-- LEFT COLUMN: Main Issue Details & Activity (70%)  -->
+            <!-- ================================================= -->
+            <div class="col-span-12 lg:col-span-8 space-y-6">
+
+                <!-- Issue Key & Type -->
+                <div class="flex items-center gap-2 text-xs">
+                    <span class="w-4 h-4 rounded bg-emerald-600 text-white flex items-center justify-center text-[9px] font-bold" title="Story">
+                        <i class="fa-solid fa-bookmark"></i>
+                    </span>
+                    <span class="font-mono font-bold text-[#5E6C84] hover:underline cursor-pointer">MMI-7</span>
+                </div>
+
+                <!-- Issue Title -->
+                <div>
+                    <h1 class="text-2xl font-semibold text-[#172B4D] leading-snug hover:bg-[#F4F5F7] p-1 -ml-1 rounded transition cursor-pointer">
+                        Write stored procedure to perform data migration
+                    </h1>
+                </div>
+
+                <!-- Jira Action Bar (Attach, Sub-task, Link) -->
+                <div class="flex items-center gap-2 border-b border-[#DFE1E6] pb-4">
+                    <button class="bg-[#F4F5F7] hover:bg-[#EBECFF] hover:text-[#0052CC] text-[#42526E] font-semibold text-xs px-3 py-1.5 rounded flex items-center gap-1.5 transition">
+                        <i class="fa-solid fa-paperclip"></i> Attach
+                    </button>
+                    <button @click="openSubtaskModal = true" class="bg-[#F4F5F7] hover:bg-[#EBECFF] hover:text-[#0052CC] text-[#42526E] font-semibold text-xs px-3 py-1.5 rounded flex items-center gap-1.5 transition">
+                        <i class="fa-solid fa-diagram-nested"></i> Add child issue
+                    </button>
+                    <button class="bg-[#F4F5F7] hover:bg-[#EBECFF] hover:text-[#0052CC] text-[#42526E] font-semibold text-xs px-3 py-1.5 rounded flex items-center gap-1.5 transition">
+                        <i class="fa-solid fa-link"></i> Link issue
+                    </button>
+                </div>
+
+                <!-- Description Section -->
+                <div class="space-y-2">
+                    <h3 class="text-xs font-bold text-[#5E6C84] uppercase tracking-wider">Description</h3>
+                    <div class="text-sm text-[#172B4D] leading-relaxed p-3 hover:bg-[#F4F5F7] rounded border border-transparent hover:border-[#DFE1E6] transition cursor-pointer">
+                        <p class="mb-2">Implement a SQL stored procedure that migrates data from the source server to the target dedicated server.</p>
+                        <ul class="list-disc list-inside space-y-1 text-[#42526E]">
+                            <li>Include step-by-step transaction handling and error logging.</li>
+                            <li>Ensure incremental updates based on timestamp columns.</li>
+                            <li>Validate schema compatibility before executing bulk inserts.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Sub-tasks Section (Jira Progress Table) -->
+                <div class="space-y-3 pt-2">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-xs font-bold text-[#5E6C84] uppercase tracking-wider">Child Issues / Sub-tasks</h3>
+                        <!-- Progress Bar -->
+                        <div class="flex items-center gap-2 text-xs text-[#5E6C84]">
+                            <div class="w-24 h-2 bg-[#DFE1E6] rounded-full overflow-hidden flex">
+                                <div class="bg-emerald-500 h-full" style="width: 66%;"></div>
+                            </div>
+                            <span class="font-bold text-[11px]">66% Done</span>
+                        </div>
+                    </div>
+
+                    <!-- Sub-tasks List Table -->
+                    <div class="border border-[#DFE1E6] rounded overflow-hidden">
+                        <template x-for="sub in subtasks" :key="sub.key">
+                            <div class="flex items-center justify-between p-2.5 bg-white border-b border-[#DFE1E6] last:border-0 hover:bg-[#F4F5F7] transition text-xs">
+                                <div class="flex items-center gap-2.5 min-w-0">
+                                    <i class="fa-solid fa-check-square text-blue-600"></i>
+                                    <span class="font-mono text-[#5E6C84] font-bold" x-text="sub.key"></span>
+                                    <span class="truncate font-medium text-[#172B4D]" :class="sub.status === 'Done' ? 'line-through text-[#5E6C84]' : ''" x-text="sub.title"></span>
+                                </div>
+                                <div class="flex items-center gap-3 shrink-0">
+                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase"
+                                          :class="sub.status === 'Done' ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'"
+                                          x-text="sub.status"></span>
+                                    <div class="w-5 h-5 rounded-full bg-amber-500 text-white text-[9px] font-bold flex items-center justify-center" x-text="sub.assigneeInitials"></div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Activity Log & Comments (Jira Tabs) -->
+                <div class="pt-4 space-y-4">
+                    <div class="flex items-center justify-between border-b border-[#DFE1E6] pb-2">
+                        <h3 class="text-xs font-bold text-[#5E6C84] uppercase tracking-wider">Activity</h3>
+                        <div class="flex items-center gap-1 text-xs">
+                            <span class="text-[#5E6C84]">Show:</span>
+                            <button class="px-2 py-0.5 rounded bg-[#EBECFF] text-[#0052CC] font-bold">All</button>
+                            <button class="px-2 py-0.5 rounded hover:bg-[#F4F5F7] text-[#5E6C84]">Comments</button>
+                            <button class="px-2 py-0.5 rounded hover:bg-[#F4F5F7] text-[#5E6C84]">History</button>
+                        </div>
+                    </div>
+
+                    <!-- Add Comment Box (Jira Style) -->
+                    <div class="flex gap-3 pt-2">
+                        <div class="w-7 h-7 rounded-full bg-amber-500 text-white font-bold text-xs flex items-center justify-center shrink-0">WM</div>
+                        <div class="flex-1 space-y-2">
+                            <textarea placeholder="Add a comment..." rows="2" class="w-full border border-[#DFE1E6] rounded p-2.5 text-xs text-[#172B4D] focus:outline-none focus:border-[#0052CC] focus:ring-1 focus:ring-[#0052CC] transition"></textarea>
+                            <div class="flex items-center gap-2">
+                                <button class="bg-[#0052CC] hover:bg-[#0747A6] text-white font-bold text-xs px-3 py-1.5 rounded transition">Save</button>
+                                <button class="text-[#5E6C84] hover:text-[#172B4D] text-xs font-medium px-2 py-1.5">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Comments List -->
+                    <div class="space-y-4 pt-2">
+                        <div class="flex gap-3 text-xs">
+                            <div class="w-7 h-7 rounded-full bg-emerald-600 text-white font-bold text-xs flex items-center justify-center shrink-0">D</div>
+                            <div class="flex-1 space-y-1">
+                                <div class="flex items-center gap-2">
+                                    <span class="font-bold text-[#172B4D]">Daren</span>
+                                    <span class="text-[11px] text-[#5E6C84]">Yesterday 14:30</span>
+                                </div>
+                                <div class="text-[#172B4D] bg-[#F4F5F7] p-3 rounded border border-[#DFE1E6]">
+                                    Waiting for VPN credentials from the client before testing the stored procedure execution on dev.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- ================================================= -->
+            <!-- RIGHT COLUMN: Jira Attributes Panel (30%)        -->
+            <!-- ================================================= -->
+            <div class="col-span-12 lg:col-span-4 space-y-6">
+
+                <!-- Workflow Status Dropdown -->
+                <div class="space-y-1.5">
+                    <label class="text-[11px] font-bold text-[#5E6C84] uppercase tracking-wider block">Status</label>
+                    <div class="relative">
+                        <button class="w-full bg-[#DEEBFF] hover:bg-[#B3D4FF] text-[#0747A6] font-bold text-xs px-3 py-2 rounded flex items-center justify-between transition border border-[#4c9aff]/30">
+                            <span class="flex items-center gap-2 uppercase tracking-wide">
+                                <i class="fa-solid fa-spinner text-xs"></i> IN REVIEW
+                            </span>
+                            <i class="fa-solid fa-chevron-down text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Details Accordion Box (Jira Right Sidebar) -->
+                <div class="border border-[#DFE1E6] rounded p-4 space-y-4 text-xs">
+                    <h4 class="font-bold text-[#172B4D] border-b border-[#DFE1E6] pb-2 text-xs flex items-center justify-between">
+                        Details
+                        <i class="fa-solid fa-chevron-up text-[#5E6C84] text-[10px]"></i>
+                    </h4>
+
+                    <!-- Assignee Field -->
+                    <div class="grid grid-cols-12 items-center gap-2">
+                        <span class="col-span-4 text-[#5E6C84] font-medium">Assignee</span>
+                        <div class="col-span-8 flex items-center gap-2 p-1 hover:bg-[#F4F5F7] rounded cursor-pointer">
+                            <div class="w-5 h-5 rounded-full bg-amber-500 text-white font-bold text-[9px] flex items-center justify-center">WM</div>
+                            <span class="font-semibold text-[#172B4D]">Wojciech Mruk</span>
+                        </div>
+                    </div>
+
+                    <!-- Reporter Field -->
+                    <div class="grid grid-cols-12 items-center gap-2">
+                        <span class="col-span-4 text-[#5E6C84] font-medium">Reporter</span>
+                        <div class="col-span-8 flex items-center gap-2 p-1 hover:bg-[#F4F5F7] rounded cursor-pointer">
+                            <div class="w-5 h-5 rounded-full bg-amber-500 text-white font-bold text-[9px] flex items-center justify-center">WM</div>
+                            <span class="font-semibold text-[#172B4D]">Wojciech Mruk</span>
+                        </div>
+                    </div>
+
+                    <!-- Priority Field -->
+                    <div class="grid grid-cols-12 items-center gap-2">
+                        <span class="col-span-4 text-[#5E6C84] font-medium">Priority</span>
+                        <div class="col-span-8 flex items-center gap-1.5 p-1 hover:bg-[#F4F5F7] rounded cursor-pointer font-semibold text-[#172B4D]">
+                            <i class="fa-solid fa-angle-up text-orange-600 font-bold"></i>
+                            <span>High</span>
+                        </div>
+                    </div>
+
+                    <!-- Labels Field -->
+                    <div class="grid grid-cols-12 items-start gap-2">
+                        <span class="col-span-4 text-[#5E6C84] font-medium pt-1">Labels</span>
+                        <div class="col-span-8 flex flex-wrap gap-1">
+                            <span class="bg-[#F4F5F7] text-[#42526E] border border-[#DFE1E6] px-2 py-0.5 rounded text-[11px] font-semibold hover:bg-[#EBECFF] hover:text-[#0052CC] cursor-pointer">database</span>
+                            <span class="bg-[#F4F5F7] text-[#42526E] border border-[#DFE1E6] px-2 py-0.5 rounded text-[11px] font-semibold hover:bg-[#EBECFF] hover:text-[#0052CC] cursor-pointer">migration</span>
+                        </div>
+                    </div>
+
+                    <!-- Epic Link Field -->
+                    <div class="grid grid-cols-12 items-center gap-2">
+                        <span class="col-span-4 text-[#5E6C84] font-medium">Epic Link</span>
+                        <div class="col-span-8">
+                            <span class="bg-purple-100 text-purple-800 border border-purple-200 px-2 py-0.5 rounded font-bold text-[10px] uppercase truncate block">
+                                MMI-1 Data Migration
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dates Box -->
+                <div class="border border-[#DFE1E6] rounded p-4 space-y-3 text-xs">
+                    <h4 class="font-bold text-[#172B4D] border-b border-[#DFE1E6] pb-2 text-xs">Dates</h4>
+                    <div class="flex justify-between text-[#5E6C84]">
+                        <span>Created:</span>
+                        <span class="text-[#172B4D] font-medium">Sep 28, 2026</span>
+                    </div>
+                    <div class="flex justify-between text-[#5E6C84]">
+                        <span>Updated:</span>
+                        <span class="text-[#172B4D] font-medium">3 hours ago</span>
+                    </div>
+                </div>
+
+                <!-- Related Network SMB Path -->
+                <div class="border border-[#DFE1E6] rounded p-4 space-y-2 text-xs bg-[#FAFBFC]">
+                    <h4 class="font-bold text-[#5E6C84] text-[11px] uppercase tracking-wider">Network File Share</h4>
+                    <div class="p-2 bg-white border border-[#DFE1E6] rounded font-mono text-[10px] text-[#172B4D] break-all select-all">
+                        \\SERVER\IT\Migration_Procedure.sql
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Alpine.js App State -->
+    <script>
+        function jiraTaskApp() {
+            return {
+                subtasks: [
+                    { key: 'MMI-12', title: 'Define input parameters for target database credentials', status: 'Done', assigneeInitials: 'WM' },
+                    { key: 'MMI-13', title: 'Write transaction rollback logic on failure', status: 'Done', assigneeInitials: 'D' },
+                    { key: 'MMI-14', title: 'Add log records into migration_logs table', status: 'In Progress', assigneeInitials: 'WM' }
+                ]
+            }
+        }
+    </script>
+</body>
+</html>
